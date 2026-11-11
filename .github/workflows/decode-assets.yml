@@ -1,0 +1,30 @@
+name: Decode binary assets
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.b64"
+      - ".github/workflows/decode-assets.yml"
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode binary assets
+        run: |
+          base64 -d icon-180.png.b64 > icon-180.png
+          base64 -d icon-512.png.b64 > icon-512.png
+          base64 -d favicon.ico.b64 > favicon.ico
+      - name: Commit decoded files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add icon-180.png icon-512.png favicon.ico
+          if git diff --cached --quiet; then
+            echo "No binary changes"
+          else
+            git commit -m "Add decoded Home Screen icons and favicon"
+            git push
+          fi
