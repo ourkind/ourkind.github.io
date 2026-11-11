@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dash Companion">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="/mine/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" type="image/png" href="/icon-180.png">
+<title>Dash Companion</title>
+<style>
+:root{--bg:#0A0A0A;--c1:#141414;--c2:#1E1E1E;--red:#CC0000;--red2:#990000;--gold:#D4AF37;--w:#FFFFFF;--mut:#A0A0A0;--line:#2a2a2a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--w);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{padding:calc(env(safe-area-inset-top) + 10px) 14px calc(96px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 2px;letter-spacing:.2px}
+h1 span{color:var(--gold)}
+h2{font-size:15px;margin:0 0 8px;color:var(--gold);text-transform:uppercase;letter-spacing:.8px}
+h3{font-size:16px;margin:0 0 8px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.hint{color:var(--mut);font-size:13px;margin:8px 0 0}
+.card{background:var(--c1);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.tab{display:none}.tab.on{display:block}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.seg button,.btn{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--c2);color:var(--w);font-size:16px;font-weight:600;padding:10px 12px}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#000;border-color:var(--gold)}
+.btn.gold{background:var(--gold);color:#000;border-color:var(--gold)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.alt{background:var(--c2)}
+.btn.sm{min-height:40px;font-size:14px;padding:6px 10px}
+.btn.big{width:100%;min-height:64px;font-size:20px}
+.btn.arm{background:var(--red2);border-color:var(--red)}
+.prot{width:100%;display:flex;justify-content:space-between;align-items:center;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--c2);color:var(--w);font-size:16px;font-weight:600;padding:10px 14px;margin:4px 0}
+.prot[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.prot b{color:var(--mut)}.prot[aria-pressed="true"] b{color:var(--gold)}
+.tierline{font-size:14px;color:var(--mut);margin:6px 2px 10px}
+.tierline b{color:var(--w)}
+.ladder{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--c1)}
+.lr{display:grid;grid-template-columns:.8fr 1fr 1.2fr;align-items:center;padding:0 14px;min-height:54px;border-top:1px solid var(--line)}
+.lr.hd{min-height:38px;border-top:0;background:var(--c2);color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+.lr .mi{font-size:22px;font-weight:700}
+.lr .mb{font-size:24px;font-weight:600;color:var(--w);text-align:right}
+.lr .ac{font-size:32px;font-weight:800;color:var(--gold);text-align:right}
+.lr.hd span{font-size:12px;font-weight:600;color:var(--mut)}
+.lr.hd span:nth-child(n+2){text-align:right}
+.foot{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--mut)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#0f0f0f;color:var(--w);font-size:17px;padding:10px 12px}
+textarea{min-height:120px;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.verdict{margin-top:10px;border-radius:12px;padding:12px 14px;background:var(--c2);border:1px solid var(--line)}
+.verdict .vw{font-size:30px;font-weight:800;letter-spacing:.5px}
+.v-accept .vw{color:var(--gold)}.v-maybe .vw{color:var(--w)}.v-decline .vw{color:var(--red)}
+.v-accept{border-color:var(--gold)}.v-decline{border-color:var(--red)}
+.timer{font-size:54px;font-weight:800;text-align:center;letter-spacing:1px;margin:6px 0 12px;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.row:first-of-type{border-top:0}
+.row b{font-variant-numeric:tabular-nums}
+.day{margin:14px 2px 4px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between}
+.ent{background:var(--c1);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0}
+.ent .top{display:flex;justify-content:space-between;font-weight:700;font-size:17px}
+.ent .meta{color:var(--mut);font-size:13px;margin:2px 0 8px}
+.bar{height:8px;border-radius:4px;background:var(--c2);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--gold)}
+.bar.red i{background:var(--red)}
+.msg{color:var(--gold);font-size:14px;margin-top:8px;min-height:18px}
+.msg.err{color:#ff6b6b}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(10,10,10,.96);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:9}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+nav button{background:none;border:0;color:var(--mut);font-size:12px;font-weight:600;padding:6px 0;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{color:var(--gold)}
+.disc{color:var(--mut);font-size:12px;margin:18px 2px}
+a{color:var(--gold)}
+details summary{min-height:44px;display:flex;align-items:center;color:var(--gold);font-weight:600}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<h1>Dash <span>Companion</span></h1>
+<p class="sub" id="presetLine">Free tool for DoorDash dashers. Your data stays on this phone.</p>
+
+<!-- DRIVE -->
+<section class="tab on" id="t-drive">
+  <div class="seg" id="segMode"><button data-mode="b" aria-pressed="false">Bike</button><button data-mode="c" aria-pressed="true">Car</button></div>
+  <div class="seg" id="segType"><button data-shop="0" aria-pressed="true">Delivery</button><button data-shop="1" aria-pressed="false">Shop &amp; Deliver</button></div>
+  <button class="prot" id="protect" aria-pressed="false"><span>Protect tier: take the Maybes</span><b id="protectState">Off</b></button>
+  <div class="tierline" id="tierLine"></div>
+  <div class="ladder" id="ladder"></div>
+  <div class="foot"><span class="dot"></span><span id="ladderFoot">Pay under the Maybe amount is a Decline.</span></div>
+  <p class="hint" id="ladderNote"></p>
+  <div class="card">
+    <h3>Check one offer</h3>
+    <label for="qOffer">Pay, then miles. Type it or use the keyboard mic. Example: 8.50 3.2</label>
+    <input id="qOffer" type="text" inputmode="text" autocomplete="off" autocapitalize="off" placeholder="8.50 3.2">
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" id="qHear" type="button">Hear it</button><button class="btn sm alt" id="qMic" type="button" style="display:none">Say it</button></div>
+    <div id="qResult"></div>
+  </div>
+  <p class="disc">Independent tool. Not affiliated with or endorsed by DoorDash. A planning aid, not tax or financial advice. Never use this while driving: set it before the shift and glance when parked or stopped.</p>
+</section>
+
+<!-- SHIFT -->
+<section class="tab" id="t-shift">
+  <div class="card" id="shiftCard">
+    <h2>Shift</h2>
+    <div id="shiftIdle">
+      <label for="startZone">Zone</label>
+      <select id="startZone"></select>
+      <button class="btn gold big" id="startBtn" style="margin-top:12px">Start shift</button>
+      <p class="hint">The timer is optional. You can also type your hours when the shift ends.</p>
+    </div>
+    <div id="shiftOn" hidden>
+      <div class="timer" id="timer">0:00:00</div>
+      <button class="btn red big" id="endBtn">End shift</button>
+    </div>
+  </div>
+  <div class="card" id="endCard">
+    <h2>End of shift</h2>
+    <div class="g2">
+      <div><label for="eEarn">Total earned ($)</label><input id="eEarn" type="number" inputmode="decimal" step="0.01" min="0"></div>
+      <div><label for="eMiles">Miles driven or ridden</label><input id="eMiles" type="number" inputmode="decimal" step="0.1" min="0"></div>
+      <div><label for="eHours">Hours worked</label><input id="eHours" type="text" inputmode="decimal" placeholder="4.5 or 4:30"></div>
+      <div><label for="eOrders">Orders (optional)</label><input id="eOrders" type="number" inputmode="numeric" min="0"></div>
+    </div>
+    <label for="eZone">Zone</label>
+    <select id="eZone"></select>
+    <label for="eOver">Overall rating after this shift (optional)</label>
+    <input id="eOver" type="number" inputmode="decimal" min="0" max="120">
+    <details><summary>Different end date or time</summary>
+      <div class="g2"><div><label for="eDate">Date</label><input id="eDate" type="date"></div><div><label for="eTime">Time</label><input id="eTime" type="time"></div></div>
+    </details>
+    <div class="g2" style="margin-top:12px"><button class="btn gold" id="eSave">Save shift</button><button class="btn alt" id="eDiscard">Clear</button></div>
+    <div class="msg" id="eMsg"></div>
+  </div>
+  <div class="card" id="sumCard" hidden><h2>Shift summary</h2><div id="sumBody"></div></div>
+</section>
+
+<!-- LOG -->
+<section class="tab" id="t-log">
+  <h2>Log</h2>
+  <div id="logList"></div>
+  <div class="card">
+    <h3>Export</h3>
+    <button class="btn alt" id="csvBtn">Show CSV</button>
+    <textarea id="csvText" hidden aria-label="CSV text"></textarea>
+    <div class="msg" id="csvMsg"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="tab" id="t-stats">
+  <h2>Stats</h2>
+  <div class="seg" id="segRange" style="grid-template-columns:repeat(3,1fr)"><button data-r="7" aria-pressed="true">7 days</button><button data-r="30" aria-pressed="false">30 days</button><button data-r="0" aria-pressed="false">All</button></div>
+  <div id="statBody"></div>
+  <div class="card">
+    <h3>Shopping checks</h3>
+    <p class="hint" style="margin-top:0">Type the numbers from your Ratings screen. Targets are in Setup.</p>
+    <div class="g2" id="shopFields"></div>
+    <div id="shopOut" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="tab" id="t-setup">
+  <h2>Setup</h2>
+  <div class="card">
+    <h3>Your pay floors</h3>
+    <div class="g2">
+      <div><label for="s_minPay">Minimum pay ($)</label><input id="s_minPay" data-s="minPay" type="number" inputmode="decimal" step="0.25"></div>
+      <div><label for="s_minMile">Minimum per mile ($)</label><input id="s_minMile" data-s="minMile" type="number" inputmode="decimal" step="0.05"></div>
+      <div><label for="s_minHour">Minimum per hour ($)</label><input id="s_minHour" data-s="minHour" type="number" inputmode="decimal" step="0.5"></div>
+      <div><label for="s_overhead">Wait + handoff (min)</label><input id="s_overhead" data-s="overhead" type="number" inputmode="decimal" step="1"></div>
+      <div><label for="s_shopMins">Shopping time (min)</label><input id="s_shopMins" data-s="shopMins" type="number" inputmode="decimal" step="1"></div>
+      <div><label for="s_maybePct">Maybe band (percent)</label><input id="s_maybePct" data-s="maybePct" type="number" inputmode="decimal" step="1"></div>
+    </div>
+    <p class="hint">Accept means all three floors pass. Maybe means exactly one floor is missed by the Maybe band or less. Anything else is a Decline.</p>
+  </div>
+  <div class="card">
+    <h3>Bike and car</h3>
+    <div class="g2">
+      <div><label for="s_bikeMph">Bike speed (mph)</label><input id="s_bikeMph" data-s="bikeMph" type="number" inputmode="decimal" step="0.5"></div>
+      <div><label for="s_bikeCost">Bike cost per mile ($)</label><input id="s_bikeCost" data-s="bikeCost" type="number" inputmode="decimal" step="0.01"></div>
+      <div><label for="s_carMph">Car speed (mph)</label><input id="s_carMph" data-s="carMph" type="number" inputmode="decimal" step="1"></div>
+      <div><label for="s_carCost">Car fuel + upkeep per mile ($)</label><input id="s_carCost" data-s="carCost" type="number" inputmode="decimal" step="0.01"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Goals and taxes</h3>
+    <div class="g2">
+      <div><label for="s_goal">Daily goal ($)</label><input id="s_goal" data-s="goal" type="number" inputmode="decimal" step="5"></div>
+      <div><label for="s_taxPct">Tax set-aside (percent)</label><input id="s_taxPct" data-s="taxPct" type="number" inputmode="decimal" step="1"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Tier marks</h3>
+    <p class="hint" style="margin-top:0">Copy the point marks from your Dasher Ratings screen. They can differ by market.</p>
+    <div class="g2">
+      <div><label for="s_pM1">Silver mark</label><input id="s_pM1" data-s="pM1" type="number" inputmode="decimal"></div>
+      <div><label for="s_pM2">Gold mark</label><input id="s_pM2" data-s="pM2" type="number" inputmode="decimal"></div>
+      <div><label for="s_pM3">Platinum mark</label><input id="s_pM3" data-s="pM3" type="number" inputmode="decimal"></div>
+      <div><label for="s_pOverall">Your Overall</label><input id="s_pOverall" data-s="pOverall" type="number" inputmode="decimal"></div>
+      <div><label for="s_platStreak">Platinum Pass streak (deliveries)</label><input id="s_platStreak" data-s="platStreak" type="number" inputmode="numeric" step="1"></div>
+    </div>
+    <p class="hint">Platinum Pass: 200 deliveries in a row at Platinum. Dropping below Platinum resets it, per DoorDash's Help Center. It is for select Dashers and varies by market, so check your Ratings tab. The app adds orders when you enter an Overall at the Platinum mark or higher at the end of a shift. Treat it as an estimate and correct it here.</p>
+    <h3 style="margin-top:14px">Your factor points</h3>
+    <div class="g2">
+      <div><label for="s_pAcc">Acceptance (of 30)</label><input id="s_pAcc" data-s="pAcc" type="number" inputmode="decimal"></div>
+      <div><label for="s_pComp">Completion (of 15)</label><input id="s_pComp" data-s="pComp" type="number" inputmode="decimal"></div>
+      <div><label for="s_pOnt">On-time (of 30)</label><input id="s_pOnt" data-s="pOnt" type="number" inputmode="decimal"></div>
+      <div><label for="s_pQual">Quality (of 10)</label><input id="s_pQual" data-s="pQual" type="number" inputmode="decimal"></div>
+      <div><label for="s_pCust">Customer rating (of 10)</label><input id="s_pCust" data-s="pCust" type="number" inputmode="decimal"></div>
+      <div><label for="s_pOrd">Last 30 days orders (of 5)</label><input id="s_pOrd" data-s="pOrd" type="number" inputmode="decimal"></div>
+    </div>
+    <div id="factorOut"></div>
+    <p class="hint">The app trusts the Overall you type. It does not add the factors up, because DoorDash does not publish its math.</p>
+  </div>
+  <div class="card">
+    <h3>Shopping targets</h3>
+    <div class="g2">
+      <div><label for="s_tOrig">Original items found (percent, at least)</label><input id="s_tOrig" data-s="tOrig" type="number" inputmode="decimal"></div>
+      <div><label for="s_tTot">Total items found (percent, at least)</label><input id="s_tTot" data-s="tTot" type="number" inputmode="decimal"></div>
+      <div><label for="s_tSub">Substitution issues (percent, below)</label><input id="s_tSub" data-s="tSub" type="number" inputmode="decimal"></div>
+      <div><label for="s_tQual">Quality issues (percent, below)</label><input id="s_tQual" data-s="tQual" type="number" inputmode="decimal"></div>
+      <div><label for="s_tWrong">Wrong or missing (percent, below)</label><input id="s_tWrong" data-s="tWrong" type="number" inputmode="decimal"></div>
+      <div><label for="s_tLife">Lifetime shopping orders (at least)</label><input id="s_tLife" data-s="tLife" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Zones</h3>
+    <div id="zoneList"></div>
+    <div class="g2" style="grid-template-columns:1fr auto;margin-top:8px"><input id="zNew" type="text" placeholder="New zone name" autocomplete="off"><button class="btn gold" id="zAdd">Add</button></div>
+    <div class="msg" id="zMsg"></div>
+  </div>
+  <div class="card">
+    <h3>Backup</h3>
+    <p class="hint" style="margin-top:0">Your data lives in this browser on this phone. Copy a backup now and then and save it somewhere safe.</p>
+    <div class="g2"><button class="btn alt" id="bkShow">Show backup</button><button class="btn alt" id="bkImport">Restore from text</button></div>
+    <textarea id="bkText" aria-label="Backup text" placeholder="Backup appears here. To restore, paste a backup here and tap Restore from text. This works with backups from the earlier version too."></textarea>
+    <div class="msg" id="bkMsg"></div>
+  </div>
+  <div class="card">
+    <h3>Erase everything</h3>
+    <button class="btn alt" id="wipeBtn">Erase all data</button>
+    <div class="msg" id="wipeMsg"></div>
+  </div>
+  <p class="disc">Built by <a href="https://raefordaisolutiondesign.com/dash-companion-free-app/">Raeford AI Solution Design</a>. Independent tool. Not affiliated with or endorsed by DoorDash. A planning aid, not tax or financial advice.</p>
+</section>
+
+<nav><div class="in" id="tabs">
+  <button data-tab="drive" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Drive</button>
+  <button data-tab="shift"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg>Shift</button>
+  <button data-tab="log"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Log</button>
+  <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Stats</button>
+  <button data-tab="setup"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Setup</button>
+</div></nav>
+
+<script>
+(function(){
+'use strict';
+var MINE=/\/mine(\/|\/index\.html)?$/.test(location.pathname)||/[?&]p=mine\b/.test(location.search);
+var KEY=MINE?'dashCompanion.mine2':'dashCompanion.open2';
+var OLDKEY=MINE?'dashCompanion.mine1':'dashCompanion.open1';
+var DEFZONES=['Cottonwood Heights','Midvale','Sandy'];
+var DEF={ver:4,goal:100,stretch:200,minPay:3,minMile:0.8,minHour:20,overhead:8,shopMins:20,maybePct:10,taxPct:25,
+  protect:false,mode:'c',carMph:22,carCost:0.27,bikeMph:10,bikeCost:0,
+  platStreak:0,pOverall:null,pM1:null,pM2:null,pM3:null,pAcc:null,pComp:null,pOnt:null,pQual:null,pCust:null,pOrd:null,
+  shOrig:null,shTot:null,shSub:null,shQual:null,shWrong:null,shLife:null,
+  tOrig:null,tTot:null,tSub:null,tQual:null,tWrong:null,tLife:null};
+if(MINE){DEF.pM1=55;DEF.pM2=75;DEF.pM3=85;DEF.tOrig=96;DEF.tTot=99;DEF.tSub=1;DEF.tQual=1;DEF.tWrong=1;DEF.tLife=20;}
+var $=function(id){return document.getElementById(id);};
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function money(n){return '$'+(isFinite(n)?n:0).toFixed(2);}
+function money0(n){return '$'+Math.round(isFinite(n)?n:0);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function isNum(x){return typeof x==='number'&&isFinite(x);}
+
+function mig(x){
+  var st=Object.assign({},DEF,x||{});
+  if(x&&x.mph!=null&&x.carMph==null)st.carMph=x.mph;
+  if(x&&!(x.ver>=2)&&st.minMile===2)st.minMile=0.8;
+  if(!isNum(st.maybePct))st.maybePct=10;
+  if(x&&!(x.ver>=3)){if(st.tQual==null)st.tQual=DEF.tQual;if(st.tWrong==null)st.tWrong=DEF.tWrong;}
+  st.ver=4;return st;
+}
+function fromObj(o){
+  return {settings:mig(o.settings),deliveries:Array.isArray(o.deliveries)?o.deliveries:[],shifts:Array.isArray(o.shifts)?o.shifts:[],
+    events:Array.isArray(o.events)?o.events:[],zones:Array.isArray(o.zones)?o.zones:(MINE?DEFZONES.slice():[]),
+    curZone:o.curZone||'',pend:Array.isArray(o.pend)?o.pend:[],draft:o.draft||null};
+}
+function blank(){return fromObj({});}
+function load(){
+  try{var r=localStorage.getItem(KEY);if(r)return fromObj(JSON.parse(r));}catch(e){}
+  try{var q=localStorage.getItem(OLDKEY);if(q){var s=fromObj(JSON.parse(q));try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e2){}return s;}}catch(e){}
+  var b=blank();if(MINE)b.curZone=DEFZONES[0];return b;
+}
+var S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ---------- money math ---------- */
+function params(){var st=S.settings,b=st.mode==='b';return {mph:b?st.bikeMph:st.carMph,cost:b?st.bikeCost:st.carCost};}
+function minsFor(miles,shop){return miles/params().mph*60+S.settings.overhead+(shop?S.settings.shopMins:0);}
+function floorsAt(miles,shop){var st=S.settings;return [st.minPay,miles*st.minMile,minsFor(miles,shop)/60*st.minHour];}
+function thresholds(miles,shop){
+  var st=S.settings,P=floorsAt(miles,shop).sort(function(a,b){return b-a;});
+  var keep=Math.max(0,1-st.maybePct/100);
+  var acc=P[0],maybe=Math.min(acc,Math.max(P[1],keep*P[0]));
+  if(st.protect)acc=maybe;
+  return {acc:acc,maybe:maybe,hardAcc:P[0]};
+}
+function evaluate(pay,miles,shop){
+  var th=thresholds(miles,shop),p=params(),hrs=minsFor(miles,shop)/60;
+  var v=pay>=th.acc-1e-9?'accept':(pay>=th.maybe-1e-9?'maybe':'decline');
+  var cost=miles*p.cost;
+  return {v:v,perMile:miles>0?pay/miles:0,perHour:pay/hrs,net:pay-cost,netHr:(pay-cost)/hrs,th:th,tierTake:S.settings.protect&&pay<th.hardAcc-1e-9&&v==='accept'};
+}
+function up5(x){return Math.ceil(x*20-1e-9)/20;}
+var CAR_ROWS=[1,2,3,4,5,6,7,8,9,10,12,15],BIKE_ROWS=[0.5,1,1.5,2,2.5,3,3.5,4,5,6];
+var shopMode=false;
+
+/* ---------- tier ---------- */
+var FACT=[['pAcc','Acceptance',30],['pComp','Completion',15],['pOnt','On-time',30],['pQual','Quality',10],['pCust','Customer rating',10],['pOrd','Last 30 days orders',5]];
+var MNAMES=[['pM1','Silver'],['pM2','Gold'],['pM3','Platinum']];
+function tierText(){
+  var st=S.settings,o=st.pOverall;
+  if(!isNum(o))return 'Add your Overall in Setup to see your tier.';
+  var ms=MNAMES.filter(function(m){return isNum(st[m[0]]);}).map(function(m){return {n:m[1],v:st[m[0]]};}).sort(function(a,b){return a.v-b.v;});
+  if(!ms.length)return 'Add your tier marks in Setup.';
+  var cur=null,next=null;ms.forEach(function(m){if(m.v<=o)cur=m;else if(!next)next=m;});
+  var t='Overall <b>'+o+'</b>: '+(cur?'<b>'+cur.n+'</b>':'below '+ms[0].n)+'.';
+  if(next){var g=next.v-o;t+=' '+g+' point'+(g===1?'':'s')+' to '+next.n+' ('+next.v+').';}
+  else t+=' You are at the top mark.';
+  if(isNum(st.pM3)&&(o>=st.pM3||st.platStreak>0))t+=' Platinum Pass streak: <b>'+(st.platStreak||0)+'</b> of 200.';
+  var gaps=FACT.filter(function(f){return isNum(st[f[0]]);}).map(function(f){return {n:f[1],g:f[2]-st[f[0]]};}).filter(function(x){return x.g>0;}).sort(function(a,b){return b.g-a.g;});
+  if(gaps.length)t+=' Biggest gap: <b>'+gaps[0].n+'</b> ('+gaps[0].g+' points short).';
+  return t;
+}
+
+/* ---------- drive tab ---------- */
+function renderDrive(){
+  var st=S.settings,rows=st.mode==='b'?BIKE_ROWS:CAR_ROWS,h='';
+  document.querySelectorAll('#segMode button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.mode===st.mode?'true':'false');});
+  document.querySelectorAll('#segType button').forEach(function(b){b.setAttribute('aria-pressed',(b.dataset.shop==='1')===shopMode?'true':'false');});
+  $('protect').setAttribute('aria-pressed',st.protect?'true':'false');
+  $('protectState').textContent=st.protect?'On':'Off';
+  $('tierLine').innerHTML=tierText();
+  h+='<div class="lr hd"><span>Miles</span><span>'+(st.protect?'Maybe':'Maybe')+'</span><span>Accept</span></div>';
+  rows.forEach(function(m){
+    var th=thresholds(m,shopMode);
+    h+='<div class="lr"><span class="mi">'+m+' mi</span><span class="mb">'+(st.protect?'-':money(up5(th.maybe)))+'</span><span class="ac">'+money(up5(th.acc))+'</span></div>';
+  });
+  $('ladder').innerHTML=h;
+  $('ladderFoot').textContent=st.protect?'Protect tier is on: the Maybe amount counts as Accept. Pay under it is a Decline.':'Pay under the Maybe amount is a Decline.';
+  var note='These amounts follow your floors: '+money(st.minPay)+' minimum, '+money(st.minMile)+' per mile and '+money(st.minHour)+' per hour at '+params().mph+' mph with '+st.overhead+' min of wait'+(shopMode?' and '+st.shopMins+' min of shopping':'')+'. For stacked orders, use total miles.';
+  if(st.protect&&isNum(st.pAcc)&&st.pAcc>=FACT[0][2])note+=' Your Acceptance points are full, so taking Maybes will not add tier points.';
+  $('ladderNote').textContent=note;
+  renderQuick();
+}
+var NUMW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+var FILL=['dash','and','a','an','the','for','is','its',"it's",'it','about','around','like','uh','um','hey','ok','okay','just','only','pay','paying','offer','offering','order','please','of','at','total'];
+var UNITW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9};
+/* ONE validation path for typed and spoken offers. Returns {ok,pay,miles} or {ok:false,reason}. Never guesses. */
+function readOffer(t){
+  var x=String(t||'').toLowerCase();
+  if(/km|kilomet|metre|meter|\bfeet\b|\bfoot\b|\bft\b|\byards?\b|\byds?\b|\bminutes?\b|\bmins?\b|\bhours?\b|\bhrs?\b|\bsecs?\b|\bseconds?\b|\bcm\b|\bmm\b|\bm\b|\bmph\b|\bblocks?\b/.test(x))return {ok:false,reason:'unit'};
+  x=x.replace(/\b(dollars?|bucks?)\s+and\s+(a\s+)?half\b/g,' point 5 dollars ').replace(/\s+and\s+(a\s+)?half\b/g,' point 5 ');
+  if(/\b(hundred|thousand|grand|half|quarter|third|dozen|couple)\b/.test(x))return {ok:false,reason:'unsupported'};
+  x=x.replace(/\.(?!\d)/g,' ').replace(/([a-z])-([a-z])/g,'$1 $2').replace(/\$/g,' dollars ').replace(/\bpoint\b|\bdot\b/g,' . ');
+  x=x.replace(/,/g,' S ').replace(/\b(dollars?|bucks?)\b/g,' D ').replace(/\b(miles?|mi)\b/g,' M ').replace(/\bcents?\b/g,' C ');
+  var toks=x.split(/\s+/).filter(Boolean),items=[],i=0;
+  while(i<toks.length){
+    var w=toks[i];
+    if(w==='D'||w==='M'||w==='C'||w==='S'){items.push({k:w});i++;continue;}
+    if(/^\d+(\.\d+)?$/.test(w)){items.push({k:'N',v:parseFloat(w),src:'d',int:/^\d+$/.test(w)});i++;continue;}
+    if(/\d/.test(w)||/^[-+]/.test(w))return {ok:false,reason:'badtoken'};
+    if(w==='.'){
+      var prev=items[items.length-1];
+      if(prev&&prev.k==='N'&&prev.int){
+        var d='',j=i+1;
+        while(j<toks.length&&(toks[j] in UNITW||toks[j]==='zero'||/^\d$/.test(toks[j]))){d+=(/^\d$/.test(toks[j])?toks[j]:String(NUMW[toks[j]]));j++;}
+        if(d){prev.v=parseFloat(prev.v+'.'+d);prev.int=false;i=j;continue;}
+      }
+      return {ok:false,reason:'decimal'};
+    }
+    if(w in NUMW){
+      var v=NUMW[w],n=toks[i+1],last=items[items.length-1];
+      if(last&&last.k==='N')return {ok:false,reason:'adjacent'}; /* two numbers with nothing between them */
+      if(v>=20&&v%10===0&&n in UNITW){v+=UNITW[n];i++;}
+      items.push({k:'N',v:v,src:'w',int:true});i++;continue;
+    }
+    if(FILL.indexOf(w)<0)return {ok:false,reason:'unknown'}; /* only known filler is skipped; anything else asks for a repeat */
+    i++;
+  }
+  var ix=[];items.forEach(function(it,k){if(it.k==='N')ix.push(k);});
+  var N=ix.map(function(k){return items[k].v;});
+  var hasD=items.some(function(it){return it.k==='D';}),hasM=items.some(function(it){return it.k==='M';}),hasC=items.some(function(it){return it.k==='C';});
+  var pay,miles;
+  if(N.length===2&&!hasC){
+    var mid=items.slice(ix[0]+1,ix[1]).map(function(it){return it.k;}),bothDigits=items[ix[0]].src==='d'&&items[ix[1]].src==='d';
+    if(!(mid.indexOf('D')>=0||mid.indexOf('S')>=0||mid.indexOf('M')>=0||bothDigits))return {ok:false,reason:'unclear'};
+    pay=N[0];miles=N[1];
+  }else if(N.length===3&&hasC){pay=N[0]+N[1]/100;miles=N[2];}
+  else return {ok:false,reason:N.length<2?'few':'unclear'};
+  if(hasD&&hasM){var di=-1,mi=-1;items.forEach(function(it,k){if(it.k==='D'&&di<0)di=k;if(it.k==='M'&&mi<0)mi=k;});if(mi<di)return {ok:false,reason:'order'};}
+  if(!(pay>=1&&pay<=99.99)||!(miles>=0.1&&miles<=40))return {ok:false,reason:'range'};
+  return {ok:true,pay:Math.round(pay*100)/100,miles:miles};
+}
+function parseSpoken(t){return readOffer(t);}
+function parseOffer(t){var r=readOffer(t);return r.ok?{pay:r.pay,miles:r.miles}:null;}
+/* one verdict object feeds BOTH the screen and the voice */
+function verdictFor(t){
+  var r=readOffer(t);
+  if(!r.ok)return {ok:false,reason:r.reason,speech:r.reason==='unit'?'That is not in miles. Say the distance in miles.':'Did not catch that. Say the pay, then the miles.'};
+  var e=evaluate(r.pay,r.miles,shopMode),prot=!!S.settings.protect;
+  var wd=Math.floor(r.pay+1e-9),ct=Math.round((r.pay-wd)*100),heard=wd+' dollar'+(wd===1?'':'s')+(ct?' and '+ct+' cents':'')+', '+r.miles+' mile'+(r.miles===1?'':'s')+'. ';
+  var w=e.v==='accept'?'Accept.':(e.v==='maybe'?'Maybe.':'Decline.');
+  var extra=e.v==='decline'?(prot?' Accept starts at '+money(up5(e.th.acc))+'.':' Maybe starts at '+money(up5(e.th.maybe))+'.'):(e.v==='maybe'?' Accept starts at '+money(up5(e.th.acc))+'.':'');
+  return {ok:true,pay:r.pay,miles:r.miles,e:e,v:e.v,speech:heard+w+extra};
+}
+function say(txt){try{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(txt);u.rate=1.0;speechSynthesis.speak(u);}catch(e){}}
+function spokenFor(t){var v=verdictFor(t);return {text:v.speech,verdict:v.ok?v.v:null};}
+function renderQuick(){
+  var raw=$('qOffer').value,out=$('qResult'),v=verdictFor(raw);
+  if(!v.ok){out.innerHTML=raw.trim()?'<p class="hint">'+(v.reason==='unit'?'Enter the distance in miles.':'Not clear. Say or type the pay, then the miles.')+'</p>':'';return;}
+  var r=v.e,p=params(),q={pay:v.pay,miles:v.miles};
+  var word=r.v==='accept'?'ACCEPT':(r.v==='maybe'?'MAYBE':'DECLINE');
+  var lines=money(r.perMile)+' per mile, '+money(r.perHour)+' per hour (about '+Math.round(minsFor(q.miles,shopMode))+' min).';
+  if(p.cost>0)lines+=' After fuel + upkeep: '+money(r.net)+', '+money(r.netHr)+' per hour.';
+  if(r.tierTake)lines+=' Taken because Protect tier is on.';
+  out.innerHTML='<div class="verdict v-'+r.v+'"><div class="vw">'+word+'</div><div class="hint" style="margin-top:2px">'+lines+'</div></div>';
+}
+$('qOffer').addEventListener('input',renderQuick);
+$('qHear').addEventListener('click',function(){renderQuick();say(spokenFor($('qOffer').value).text);});
+$('qOffer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();say(spokenFor($('qOffer').value).text);}});
+(function(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;var b=$('qMic');b.style.display='';
+  b.addEventListener('click',function(){try{var r=new SR();r.lang='en-US';r.interimResults=false;r.maxAlternatives=1;
+    r.onresult=function(ev){var tx=ev.results[0][0].transcript;$('qOffer').value=tx;renderQuick();var o=spokenFor(tx);say(o.text);};
+    r.onerror=function(){say('Did not catch that.');};r.start();}catch(e){say('Mic is not available here.');}});})();
+
+$('segMode').addEventListener('click',function(e){var b=e.target.closest('[data-mode]');if(!b)return;S.settings.mode=b.dataset.mode;save();renderDrive();});
+$('segType').addEventListener('click',function(e){var b=e.target.closest('[data-shop]');if(!b)return;shopMode=b.dataset.shop==='1';renderDrive();});
+$('protect').addEventListener('click',function(){S.settings.protect=!S.settings.protect;save();renderDrive();});
+
+/* ---------- time helpers ---------- */
+function pad2(n){return String(n).padStart(2,'0');}
+function ymd(ts){var d=new Date(ts);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function hmm(ts){var d=new Date(ts);return pad2(d.getHours())+':'+pad2(d.getMinutes());}
+function t12(ts){var d=new Date(ts),h=d.getHours();return (h%12===0?12:h%12)+':'+pad2(d.getMinutes())+' '+(h<12?'AM':'PM');}
+function hour12(h){return (h%12===0?12:h%12)+' '+(h<12?'AM':'PM');}
+function sod(ts){var d=new Date(ts);d.setHours(0,0,0,0);return d.getTime();}
+function hmsFmt(ms){var s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h+':'+pad2(m)+':'+pad2(x);}
+function parseHours(v){v=String(v||'').trim();if(!v)return NaN;if(v.indexOf(':')>=0){var p=v.split(':');var h=parseFloat(p[0]),m=parseFloat(p[1]||'0');return isFinite(h)&&isFinite(m)?h+m/60:NaN;}var n=parseFloat(v);return isFinite(n)?n:NaN;}
+function fmtHrs(h){var m=Math.round(h*60);return m>=60?Math.floor(m/60)+' hr '+(m%60)+' min':m+' min';}
+var RATES=[[new Date(2026,6,1).getTime(),0.76],[new Date(2026,0,1).getTime(),0.725],[0,0.70]];
+function irsRate(ts){for(var i=0;i<RATES.length;i++){if(ts>=RATES[i][0])return RATES[i][1];}return 0.70;}
+function numv(id){var v=parseFloat($(id).value);return isFinite(v)?v:NaN;}
+
+/* ---------- zones ---------- */
+function zoneOpts(sel){return '<option value="">(no zone)</option>'+S.zones.map(function(z){return '<option'+(z===sel?' selected':'')+'>'+esc(z)+'</option>';}).join('');}
+function renderZoneSelects(){
+  var a=$('startZone').value||S.curZone,b=$('eZone').value;
+  $('startZone').innerHTML=zoneOpts(S.curZone);
+  $('eZone').innerHTML=zoneOpts(S.draft&&S.draft.z!=null?S.draft.z:(b||S.curZone));
+}
+function renderZoneList(){
+  $('zoneList').innerHTML=S.zones.length?S.zones.map(function(z,i){return '<div class="row"><span>'+esc(z)+'</span><button class="btn alt sm" data-zdel="'+i+'">Remove</button></div>';}).join(''):'<p class="hint" style="margin-top:0">No zones yet. Add the areas you dash in.</p>';
+}
+$('zAdd').addEventListener('click',function(){
+  var v=$('zNew').value.trim();
+  if(!v){$('zMsg').textContent='Type a zone name.';$('zMsg').className='msg err';return;}
+  if(S.zones.indexOf(v)>=0){$('zMsg').textContent='That zone is already there.';$('zMsg').className='msg err';return;}
+  S.zones.push(v);if(!S.curZone)S.curZone=v;$('zNew').value='';save();$('zMsg').className='msg';$('zMsg').textContent='Added.';renderZoneList();renderZoneSelects();
+});
+$('startZone').addEventListener('change',function(){S.curZone=$('startZone').value;save();});
+
+/* two-tap button helper */
+function arm(btn,label,armLabel,fn){
+  if(btn.dataset.arm==='1'){btn.dataset.arm='';fn();return;}
+  btn.dataset.arm='1';btn.textContent=armLabel;btn.classList.add('arm');
+  setTimeout(function(){if(btn.isConnected){btn.dataset.arm='';btn.textContent=label;btn.classList.remove('arm');}},3000);
+}
+$('zoneList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-zdel]');if(!b)return;
+  arm(b,'Remove','Tap again',function(){var z=S.zones[+b.dataset.zdel];S.zones.splice(+b.dataset.zdel,1);if(S.curZone===z)S.curZone=S.zones[0]||'';save();renderZoneList();renderZoneSelects();});
+});
+
+/* ---------- shift ---------- */
+var tickT=null;
+function activeShift(){for(var i=0;i<S.shifts.length;i++){if(!S.shifts[i].end)return S.shifts[i];}return null;}
+function renderShift(){
+  var a=activeShift();
+  $('shiftIdle').hidden=!!a;$('shiftOn').hidden=!a;
+  if(a){$('timer').textContent=hmsFmt(Date.now()-a.start);if(!tickT)tickT=setInterval(function(){var x=activeShift();if(!x){clearInterval(tickT);tickT=null;return;}$('timer').textContent=hmsFmt(Date.now()-x.start);},1000);}
+  else if(tickT){clearInterval(tickT);tickT=null;}
+}
+$('startBtn').addEventListener('click',function(){
+  if(activeShift())return;
+  S.curZone=$('startZone').value;
+  var now=Date.now();S.shifts.push({id:uid(),start:now,end:null,z:S.curZone,s0:now,md:S.settings.mode});save();renderShift();
+});
+$('endBtn').addEventListener('click',function(){
+  var a=activeShift();if(!a)return;
+  var now=Date.now();
+  S.shifts=S.shifts.filter(function(s){return s!==a;});
+  S.draft={end:now,ms:now-a.start,z:a.z||'',md:a.md||S.settings.mode};save();
+  prefillEnd(true);renderShift();
+  var c=$('endCard');if(c.scrollIntoView)c.scrollIntoView({block:'start'});
+});
+function prefillEnd(force){
+  var d=S.draft,end=d?d.end:Date.now();
+  if(force||!$('eDate').value){$('eDate').value=ymd(end);$('eTime').value=hmm(end);}
+  if(d&&(force||!$('eHours').value)){$('eHours').value=(d.ms/36e5).toFixed(2);}
+  renderZoneSelects();
+}
+$('eDiscard').addEventListener('click',function(){
+  S.draft=null;save();['eEarn','eMiles','eHours','eOrders','eOver'].forEach(function(id){$(id).value='';});$('eMsg').textContent='';prefillEnd(true);
+});
+function fixed2(n){return Math.round(n*100)/100;}
+$('eSave').addEventListener('click',function(){
+  var msg=$('eMsg'),st=S.settings,earn=numv('eEarn'),mi=numv('eMiles'),hrs=parseHours($('eHours').value);
+  msg.className='msg err';
+  if(!(earn>0)){msg.textContent='Enter the total earned.';return;}
+  if(!(mi>=0)){msg.textContent='Enter total miles.';return;}
+  if(!(hrs>0&&hrs<=24)){msg.textContent='Enter hours worked, like 4.5 or 4:30.';return;}
+  var p=($('eDate').value||'').split('-'),t=($('eTime').value||'').split(':');
+  if(p.length!==3){msg.textContent='Pick the date.';return;}
+  var end=new Date(+p[0],+p[1]-1,+p[2],+(t[0]||0),+(t[1]||0)).getTime();
+  if(!isFinite(end)){msg.textContent='Check the date and time.';return;}
+  if(end>Date.now()+6e4){msg.textContent='That end time is in the future.';return;}
+  var z=$('eZone').value,orders=numv('eOrders'),ov=numv('eOver'),did=uid(),md=S.draft?S.draft.md:st.mode,tm=S.draft?1:0;
+  S.deliveries.push({id:did,ts:end,pay:fixed2(earn),miles:Math.round(mi*10)/10,t:'d',z:z,m:1,tm:tm,n:orders>0?Math.round(orders):0,hrs:hrs,md:md});
+  S.shifts.push({id:uid(),start:end-hrs*36e5,end:end,z:z,did:did,m:1,tm:tm,hrs:hrs,md:md});
+  var streakNote='';
+  if(isFinite(ov)&&ov>=0&&ov<=120){
+    st.pOverall=ov;
+    if(isNum(st.pM3)){
+      if(ov>=st.pM3){if(orders>0){st.platStreak=(st.platStreak||0)+Math.round(orders);streakNote=' Platinum Pass streak: '+st.platStreak+' of 200.';}else streakNote=' Add the order count to grow your Platinum Pass streak.';}
+      else if(st.platStreak>0){st.platStreak=0;streakNote=' Below Platinum, so the Platinum Pass streak reset to 0.';}
+    }
+  }
+  var bike=md==='b',car=bike?st.bikeCost:st.carCost,fuel=mi*car,irs=mi*irsRate(end);
+  var tax=Math.max(0,earn-(bike?0:irs))*st.taxPct/100;
+  function row(a,b,s){return '<div class="row"><span>'+(s?'<b>'+a+'</b>':a)+'</span><b>'+b+'</b></div>';}
+  var html=row('Earned',money(earn))+row('Per hour',money(earn/hrs),true)+row('Per mile',mi>0?money(earn/mi):'-');
+  if(car>0)html+=row('Fuel + upkeep ('+mi.toFixed(0)+' mi)','-'+money(fuel));
+  html+=row('Tax set-aside ('+st.taxPct+'%)','-'+money(tax))+row('Left after costs + set-aside',money(earn-fuel-tax),true);
+  if(!bike)html+=row('Left after full IRS rate + set-aside',money(earn-irs-tax));
+  html+='<p class="hint">'+(earn>=st.goal?'Goal of '+money0(st.goal)+' hit.':money(st.goal-earn)+' short of your '+money0(st.goal)+' goal.')+(z?' Zone: '+esc(z)+'.':'')+(bike?' Bike shift: no mileage deduction is shown.':'')+streakNote+'</p>';
+  $('sumBody').innerHTML=html;$('sumCard').hidden=false;
+  S.draft=null;['eEarn','eMiles','eHours','eOrders','eOver'].forEach(function(id){$(id).value='';});
+  msg.className='msg';msg.textContent='Saved.';
+  save();prefillEnd(true);renderDrive();renderSetupFields();
+  if($('sumCard').scrollIntoView)$('sumCard').scrollIntoView({block:'start'});
+});
+
+/* ---------- data joins ---------- */
+function joined(cut){
+  var dm={};S.deliveries.forEach(function(d){dm[d.id]=d;});
+  var rows=[];
+  S.shifts.forEach(function(s){
+    if(!s.end||!s.did)return;var d=dm[s.did];if(!d)return;if(s.end<cut)return;
+    rows.push({s:s,d:d,hrs:Math.max(0,(s.end-s.start)/36e5)});
+  });
+  return rows;
+}
+
+/* ---------- log ---------- */
+var DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function renderLog(){
+  var rows=joined(0).sort(function(a,b){return b.s.end-a.s.end;});
+  if(!rows.length){$('logList').innerHTML='<div class="card"><p class="hint" style="margin:0">No shifts yet. End a shift on the Shift tab and it shows up here.</p></div>';return;}
+  var byDay={},order=[];
+  rows.forEach(function(r){var k=ymd(r.s.end);if(!byDay[k]){byDay[k]=[];order.push(k);}byDay[k].push(r);});
+  $('logList').innerHTML=order.map(function(k){
+    var list=byDay[k],tot=list.reduce(function(a,r){return a+r.d.pay;},0),d=new Date(list[0].s.end);
+    return '<div class="day"><span>'+DAYN[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate()+'</span><span>'+money(tot)+' &middot; '+list.length+(list.length===1?' entry':' entries')+'</span></div>'+
+      list.map(function(r){
+        var ph=r.hrs>0?r.d.pay/r.hrs:0;
+        return '<div class="ent"><div class="top"><span>'+money(r.d.pay)+'</span><span>'+money(ph)+'/hr</span></div>'+
+          '<div class="meta">Shift ended '+t12(r.s.end)+(r.d.z?' &middot; '+esc(r.d.z):'')+' &middot; '+fmtHrs(r.hrs)+' &middot; '+r.d.miles+' mi'+(r.d.n?' &middot; '+r.d.n+' orders':'')+(r.s.md==='b'?' &middot; bike':'')+'</div>'+
+          '<button class="btn alt sm" data-del="'+r.d.id+'">Delete</button></div>';
+      }).join('');
+  }).join('');
+}
+$('logList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-del]');if(!b)return;
+  arm(b,'Delete','Tap again',function(){var id=b.dataset.del;S.deliveries=S.deliveries.filter(function(d){return d.id!==id;});S.shifts=S.shifts.filter(function(s){return s.did!==id;});save();renderLog();renderStats();});
+});
+$('csvBtn').addEventListener('click',function(){
+  var rows=joined(0).sort(function(a,b){return a.s.end-b.s.end;});
+  var lines=['date,end_time,zone,mode,earned,miles,hours,orders,per_hour,per_mile'];
+  rows.forEach(function(r){lines.push([ymd(r.s.end),hmm(r.s.end),'"'+(r.d.z||'').replace(/"/g,'""')+'"',r.s.md==='b'?'bike':'car',r.d.pay.toFixed(2),r.d.miles,r.hrs.toFixed(2),r.d.n||0,(r.hrs>0?r.d.pay/r.hrs:0).toFixed(2),(r.d.miles>0?r.d.pay/r.d.miles:0).toFixed(2)].join(','));});
+  var t=$('csvText');t.hidden=false;t.value=lines.join('\n');t.select();
+  try{navigator.clipboard.writeText(t.value).then(function(){$('csvMsg').textContent='CSV shown and copied.';},function(){$('csvMsg').textContent='CSV shown. Select all and copy it.';});}catch(e){$('csvMsg').textContent='CSV shown. Select all and copy it.';}
+});
+
+/* ---------- stats ---------- */
+var rangeDays=7;
+function renderStats(){
+  var cut=rangeDays?Date.now()-rangeDays*864e5:0,rows=joined(cut);
+  var tot={pay:0,hrs:0,mi:0};rows.forEach(function(r){tot.pay+=r.d.pay;tot.hrs+=r.hrs;tot.mi+=r.d.miles;});
+  var zones={},hours={},days={};
+  rows.forEach(function(r){
+    var k=r.d.z||'(no zone)';zones[k]=zones[k]||{pay:0,hrs:0};zones[k].pay+=r.d.pay;zones[k].hrs+=r.hrs;
+    var total=r.s.end-r.s.start;if(!(total>0))return;
+    var t=r.s.start;
+    while(t<r.s.end){
+      var d=new Date(t),nx=Math.min(r.s.end,new Date(d.getFullYear(),d.getMonth(),d.getDate(),d.getHours()+1,0,0,0).getTime());
+      var seg=nx-t,h=d.getHours(),wd=d.getDay(),sh=seg/total;
+      hours[h]=hours[h]||{pay:0,hrs:0};hours[h].pay+=r.d.pay*sh;hours[h].hrs+=seg/36e5;
+      days[wd]=days[wd]||{pay:0,hrs:0};days[wd].pay+=r.d.pay*sh;days[wd].hrs+=seg/36e5;
+      t=nx;if(seg<=0)break;
+    }
+  });
+  var out='';
+  if(!rows.length){out='<div class="card"><p class="hint" style="margin:0">No shifts in this range yet.</p></div>';}
+  else{
+    out+='<div class="card"><div class="row"><span>Earned</span><b>'+money(tot.pay)+'</b></div><div class="row"><span>Hours</span><b>'+tot.hrs.toFixed(1)+'</b></div><div class="row"><span><b>Per hour</b></span><b>'+money(tot.hrs>0?tot.pay/tot.hrs:0)+'</b></div><div class="row"><span>Per mile</span><b>'+money(tot.mi>0?tot.pay/tot.mi:0)+'</b></div></div>';
+    function rank(obj,label,nameFn,minH){
+      var arr=Object.keys(obj).map(function(k){return {k:k,pay:obj[k].pay,hrs:obj[k].hrs,rate:obj[k].hrs>0?obj[k].pay/obj[k].hrs:0};}).filter(function(x){return x.hrs>=minH;}).sort(function(a,b){return b.rate-a.rate;});
+      if(!arr.length)return '';
+      var max=arr[0].rate||1;
+      return '<div class="card"><h3>'+label+'</h3>'+arr.slice(0,6).map(function(x){return '<div style="margin:8px 0"><div class="row" style="border:0;padding:0"><span>'+nameFn(x.k)+'</span><b>'+money(x.rate)+'/hr</b></div><div class="bar"><i style="width:'+Math.max(4,Math.round(x.rate/max*100))+'%"></i></div><div class="hint" style="margin-top:2px">'+x.hrs.toFixed(1)+' hr of data</div></div>';}).join('')+'</div>';
+    }
+    out+=rank(zones,'Best zones',esc,0.01);
+    out+=rank(hours,'Best hours',function(k){return hour12(+k);},0.5);
+    out+=rank(days,'Best days',function(k){return DAYN[+k];},0.5);
+  }
+  var loose=S.deliveries.filter(function(d){return !S.shifts.some(function(s){return s.did===d.id;});}).length;
+  if(loose)out+='<p class="hint">'+loose+' older entr'+(loose===1?'y has':'ies have')+' no shift attached and '+(loose===1?'is':'are')+' not counted here.</p>';
+  $('statBody').innerHTML=out;
+  renderShop();
+}
+$('segRange').addEventListener('click',function(e){var b=e.target.closest('[data-r]');if(!b)return;rangeDays=+b.dataset.r;document.querySelectorAll('#segRange button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});renderStats();});
+
+var SHOP=[['shOrig','Original items found (%)','tOrig','ge'],['shTot','Total items found (%)','tTot','ge'],['shSub','Substitution issues (%)','tSub','lt'],['shQual','Quality issues (%)','tQual','lt'],['shWrong','Wrong or missing (%)','tWrong','lt'],['shLife','Lifetime shopping orders','tLife','ge']];
+function buildShopFields(){
+  $('shopFields').innerHTML=SHOP.map(function(s){return '<div><label for="'+s[0]+'">'+s[1]+'</label><input id="'+s[0]+'" data-sh="'+s[0]+'" type="number" inputmode="decimal" step="0.1"></div>';}).join('');
+  SHOP.forEach(function(s){var el=$(s[0]);el.value=isNum(S.settings[s[0]])?S.settings[s[0]]:'';el.addEventListener('input',function(){var v=parseFloat(el.value);S.settings[s[0]]=isFinite(v)?v:null;save();renderShop();});});
+}
+function renderShop(){
+  var st=S.settings,met=0,n=0,lines=[];
+  SHOP.forEach(function(s){
+    var v=st[s[0]],t=st[s[2]];if(!isNum(v)||!isNum(t))return;n++;
+    var ok=s[3]==='ge'?v>=t:v<t;if(ok)met++;
+    lines.push('<div class="row"><span>'+s[1]+'</span><b style="color:'+(ok?'var(--gold)':'var(--red)')+'">'+v+' '+(s[3]==='ge'?'(need '+t+'+)':'(stay under '+t+')')+'</b></div>');
+  });
+  $('shopOut').innerHTML=n?lines.join('')+'<p class="hint">'+met+' of '+n+' targets met.</p>':'<p class="hint" style="margin:0">Add your targets in Setup and your numbers here.</p>';
+}
+
+/* ---------- setup ---------- */
+function renderFactorOut(){
+  var st=S.settings,g=FACT.filter(function(f){return isNum(st[f[0]]);});
+  $('factorOut').innerHTML=g.map(function(f){var v=st[f[0]],pc=Math.max(0,Math.min(100,v/f[2]*100));return '<div style="margin:8px 0"><div class="row" style="border:0;padding:0"><span>'+f[1]+'</span><b>'+v+' / '+f[2]+'</b></div><div class="bar'+(v>=f[2]?'':' red')+'"><i style="width:'+pc+'%"></i></div></div>';}).join('');
+}
+function renderSetupFields(){
+  document.querySelectorAll('[data-s]').forEach(function(el){var v=S.settings[el.dataset.s];el.value=isNum(v)?v:'';});
+  renderFactorOut();
+  SHOP.forEach(function(s){var el=$(s[0]);if(el&&document.activeElement!==el)el.value=isNum(S.settings[s[0]])?S.settings[s[0]]:'';});
+}
+var NULLABLE=/^(pM\d|pOverall|pAcc|pComp|pOnt|pQual|pCust|pOrd|t(Orig|Tot|Sub|Qual|Wrong|Life))$/;
+document.querySelectorAll('[data-s]').forEach(function(el){
+  el.addEventListener('input',function(){
+    var k=el.dataset.s,v=parseFloat(el.value);
+    if(isFinite(v))S.settings[k]=v;
+    else S.settings[k]=NULLABLE.test(k)?null:DEF[k];
+    if(k==='maybePct'&&!(S.settings.maybePct>=0&&S.settings.maybePct<=50))S.settings.maybePct=10;
+    save();renderDrive();renderFactorOut();renderShop();
+  });
+});
+
+/* ---------- backup ---------- */
+var pendingRestore=null;
+$('bkShow').addEventListener('click',function(){
+  var t=$('bkText');t.value=JSON.stringify(S);t.select();pendingRestore=null;
+  try{navigator.clipboard.writeText(t.value).then(function(){$('bkMsg').className='msg';$('bkMsg').textContent='Backup shown and copied.';},function(){$('bkMsg').textContent='Backup shown. Select all and copy it.';});}catch(e){$('bkMsg').textContent='Backup shown. Select all and copy it.';}
+});
+$('bkImport').addEventListener('click',function(){
+  var msg=$('bkMsg');
+  try{
+    var o=JSON.parse($('bkText').value);
+    if(!o||!Array.isArray(o.deliveries)||!Array.isArray(o.shifts))throw new Error('bad');
+    if(!pendingRestore||pendingRestore.text!==$('bkText').value){
+      var ds=o.deliveries.map(function(d){return d.ts;}).filter(isFinite).sort(function(a,b){return a-b;});
+      pendingRestore={text:$('bkText').value};
+      msg.className='msg';
+      msg.textContent='This backup has '+o.shifts.filter(function(s){return s.end;}).length+' shifts and '+o.deliveries.length+' entries'+(ds.length?' from '+ymd(ds[0])+' to '+ymd(ds[ds.length-1]):'')+'. Tap Restore from text again to replace what is on this phone.';
+      $('bkImport').textContent='Tap again to restore';return;
+    }
+    S=fromObj(o);if(!S.curZone&&S.zones.length)S.curZone=S.zones[0];save();pendingRestore=null;$('bkImport').textContent='Restore from text';
+    renderAll();msg.className='msg';msg.textContent='Restored '+S.deliveries.length+' entries.';
+  }catch(e){pendingRestore=null;$('bkImport').textContent='Restore from text';msg.className='msg err';msg.textContent='That text is not a valid backup.';}
+});
+$('wipeBtn').addEventListener('click',function(){
+  arm($('wipeBtn'),'Erase all data','Tap again to erase',function(){S=blank();if(MINE)S.curZone=DEFZONES[0];save();renderAll();$('wipeMsg').className='msg';$('wipeMsg').textContent='Erased.';});
+});
+
+/* ---------- tabs ---------- */
+function showTab(n){
+  document.querySelectorAll('.tab').forEach(function(s){s.classList.toggle('on',s.id==='t-'+n);});
+  document.querySelectorAll('#tabs button').forEach(function(b){if(b.dataset.tab===n)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  if(n==='log')renderLog();if(n==='stats')renderStats();if(n==='shift')renderShift();if(n==='setup'){renderSetupFields();renderZoneList();}
+  window.scrollTo(0,0);
+}
+$('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab);});
+
+function renderAll(){renderDrive();renderZoneSelects();renderZoneList();renderShift();prefillEnd(true);renderSetupFields();renderLog();renderStats();}
+buildShopFields();
+if(MINE)$('presetLine').textContent='Your copy. Zones and tier marks are preloaded. Your data stays on this phone.';
+renderAll();
+try{if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('/sw.js');}catch(e){}
+window.__dash={thresholds:thresholds,evaluate:evaluate,parseOffer:parseOffer,parseSpoken:parseSpoken,spokenFor:spokenFor,getS:function(){return S;},KEY:KEY};
+})();
+</script>
+</body>
+</html>
