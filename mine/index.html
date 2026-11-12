@@ -89,6 +89,7 @@ details summary{min-height:44px;display:flex;align-items:center;color:var(--gold
 
 <!-- DRIVE -->
 <section class="tab on" id="t-drive">
+  <p class="hint" id="bkNudge" style="display:none;margin:0 0 8px"></p>
   <div class="seg" id="segMode"><button data-mode="b" aria-pressed="false">Bike</button><button data-mode="c" aria-pressed="true">Car</button></div>
   <div class="seg" id="segType"><button data-shop="0" aria-pressed="true">Delivery</button><button data-shop="1" aria-pressed="false">Shop &amp; Deliver</button></div>
   <button class="prot" id="protect" aria-pressed="false"><span>Protect tier: take the Maybes</span><b id="protectState">Off</b></button>
@@ -241,7 +242,9 @@ details summary{min-height:44px;display:flex;align-items:center;color:var(--gold
   <div class="card">
     <h3>Backup</h3>
     <p class="hint" style="margin-top:0">Your data lives in this browser on this phone. Copy a backup now and then and save it somewhere safe.</p>
+    <p class="hint" id="bkLast" style="margin:4px 0 8px"></p>
     <div class="g2"><button class="btn alt" id="bkShow">Show backup</button><button class="btn alt" id="bkImport">Restore from text</button></div>
+    <button class="btn alt" id="bkShare" type="button" style="display:none;margin-top:8px;width:100%">Share backup file</button>
     <textarea id="bkText" aria-label="Backup text" placeholder="Backup appears here. To restore, paste a backup here and tap Restore from text. This works with backups from the earlier version too."></textarea>
     <div class="msg" id="bkMsg"></div>
   </div>
@@ -322,7 +325,21 @@ function load(){
   var b=blank();if(MINE)b.curZone=DEFZONES[0];return b;
 }
 var S=load();
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}try{renderBk();}catch(e){}}
+/* backup reminder: own key, never part of S, never read by any verdict code */
+var BKKEY=KEY+'.lastBackup';
+function bkGet(){try{var o=JSON.parse(localStorage.getItem(BKKEY)||'null');if(o&&typeof o.ts==='number'&&isFinite(o.ts)&&o.ts>0&&o.ts<=Date.now()+60000)return {ts:o.ts,n:(Number.isInteger(o.n)&&o.n>=0&&o.n<=100000)?o.n:0};}catch(e){}return null;}
+var bkGen=0;
+function bkMark(n,g){if(typeof g==='number'&&g!==bkGen)return;try{localStorage.setItem(BKKEY,JSON.stringify({ts:Date.now(),n:(typeof n==='number'?n:doneShifts())}));}catch(e){}renderBk();}
+function doneShifts(){return S.shifts.filter(function(x){return x&&x.end;}).length;}
+function renderBk(){
+  var b=bkGet(),n=doneShifts(),el=$('bkLast'),nd=$('bkNudge');if(!el||!nd)return;
+  var since=b?Math.max(0,n-Math.min(b.n,n)):n,days=b?Math.floor((Date.now()-b.ts)/86400000):0;
+  el.textContent=b?('Last backed up '+new Date(b.ts).toLocaleDateString()+(since>0?' ('+since+' new shift'+(since===1?'':'s')+' since).':'.')):'Not backed up yet.';
+  var due=n>0&&(!b||days>=7||since>=5);
+  nd.style.display=due?'':'none';
+  nd.textContent=due?(b?'Time for a backup: '+(days>=7?days+' days':since+' new shifts')+' since the last one. Setup, then Backup.':'You have shifts saved but no backup yet. Setup, then Backup.'):'';
+}
 
 /* ---------- money math ---------- */
 function params(){var st=S.settings,b=st.mode==='b';return {mph:b?st.bikeMph:st.carMph,cost:b?st.bikeCost:st.carCost};}
@@ -709,10 +726,17 @@ document.querySelectorAll('[data-s]').forEach(function(el){
 
 /* ---------- backup ---------- */
 var pendingRestore=null;
+$('bkText').addEventListener('copy',function(){var v=this.value;if(v&&this.selectionStart===0&&this.selectionEnd===v.length&&v===JSON.stringify(S))bkMark();});
 $('bkShow').addEventListener('click',function(){
-  var t=$('bkText');t.value=JSON.stringify(S);t.select();pendingRestore=null;
-  try{navigator.clipboard.writeText(t.value).then(function(){$('bkMsg').className='msg';$('bkMsg').textContent='Backup shown and copied.';},function(){$('bkMsg').textContent='Backup shown. Select all and copy it.';});}catch(e){$('bkMsg').textContent='Backup shown. Select all and copy it.';}
+  var t=$('bkText');t.value=JSON.stringify(S);t.select();pendingRestore=null;var nAt=doneShifts(),gAt=bkGen;
+  try{navigator.clipboard.writeText(t.value).then(function(){bkMark(nAt,gAt);$('bkMsg').className='msg';$('bkMsg').textContent='Backup shown and copied.';},function(){$('bkMsg').textContent='Backup shown. Select all and copy it.';});}catch(e){$('bkMsg').textContent='Backup shown. Select all and copy it.';}
 });
+(function(){var b=$('bkShare');try{var tf=new File(['x'],'x.json',{type:'application/json'});if(!(typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[tf]})))return;}catch(e){return;}
+  b.style.display='';
+  b.addEventListener('click',function(){
+    var nAt=doneShifts(),gAt=bkGen,txt=JSON.stringify(S),f=new File([txt],'dash-backup-'+ymd(Date.now())+'.json',{type:'application/json'});
+    navigator.share({files:[f],title:'Dash Companion backup'}).then(function(){bkMark(nAt,gAt);$('bkMsg').className='msg';$('bkMsg').textContent='Backup shared.';},function(err){if(err&&err.name==='AbortError')return;$('bkText').value=txt;$('bkMsg').className='msg err';$('bkMsg').textContent='Sharing failed. Tap Show backup to copy it instead.';});
+  });})();
 $('bkImport').addEventListener('click',function(){
   var msg=$('bkMsg');
   try{
@@ -725,12 +749,12 @@ $('bkImport').addEventListener('click',function(){
       msg.textContent='This backup has '+o.shifts.filter(function(s){return s.end;}).length+' shifts and '+o.deliveries.length+' entries'+(ds.length?' from '+ymd(ds[0])+' to '+ymd(ds[ds.length-1]):'')+'. Tap Restore from text again to replace what is on this phone.';
       $('bkImport').textContent='Tap again to restore';return;
     }
-    S=fromObj(o);if(!S.curZone&&S.zones.length)S.curZone=S.zones[0];save();pendingRestore=null;$('bkImport').textContent='Restore from text';
+    S=fromObj(o);bkGen++;try{localStorage.removeItem(BKKEY);}catch(e){}if(!S.curZone&&S.zones.length)S.curZone=S.zones[0];save();pendingRestore=null;$('bkImport').textContent='Restore from text';
     renderAll();msg.className='msg';msg.textContent='Restored '+S.deliveries.length+' entries.';
   }catch(e){pendingRestore=null;$('bkImport').textContent='Restore from text';msg.className='msg err';msg.textContent='That text is not a valid backup.';}
 });
 $('wipeBtn').addEventListener('click',function(){
-  arm($('wipeBtn'),'Erase all data','Tap again to erase',function(){S=blank();if(MINE)S.curZone=DEFZONES[0];save();renderAll();$('wipeMsg').className='msg';$('wipeMsg').textContent='Erased.';});
+  arm($('wipeBtn'),'Erase all data','Tap again to erase',function(){S=blank();bkGen++;if(MINE)S.curZone=DEFZONES[0];save();try{localStorage.removeItem(BKKEY);}catch(e){}renderAll();$('wipeMsg').className='msg';$('wipeMsg').textContent='Erased.';});
 });
 
 /* ---------- tabs ---------- */
@@ -742,7 +766,7 @@ function showTab(n){
 }
 $('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab);});
 
-function renderAll(){renderDrive();renderZoneSelects();renderZoneList();renderShift();prefillEnd(true);renderSetupFields();renderLog();renderStats();}
+function renderAll(){renderBk();renderDrive();renderZoneSelects();renderZoneList();renderShift();prefillEnd(true);renderSetupFields();renderLog();renderStats();}
 buildShopFields();
 if(MINE)$('presetLine').textContent='Your copy. Zones and tier marks are preloaded. Your data stays on this phone.';
 renderAll();
