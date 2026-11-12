@@ -280,6 +280,9 @@ function money(n){return '$'+(isFinite(n)?n:0).toFixed(2);}
 function money0(n){return '$'+Math.round(isFinite(n)?n:0);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function isNum(x){return typeof x==='number'&&isFinite(x);}
+/* allowed range per setting; anything outside (or not a number) falls back to the default */
+var LIM={goal:[0,1e6],stretch:[0,1e6],minPay:[0,1000],minMile:[0,100],minHour:[0,1000],overhead:[0,120],shopMins:[0,240],maybePct:[0,50],taxPct:[0,100],carMph:[1,100],bikeMph:[1,60],carCost:[0,10],bikeCost:[0,10]};
+function sane(st){Object.keys(LIM).forEach(function(k){var v=st[k],l=LIM[k];if(!isNum(v)||v<l[0]||v>l[1])st[k]=DEF[k];});if(st.mode!=='b')st.mode='c';st.protect=st.protect===true;return st;}
 
 function mig(x){
   var st=Object.assign({},DEF,x||{});
@@ -287,12 +290,30 @@ function mig(x){
   if(x&&!(x.ver>=2)&&st.minMile===2)st.minMile=0.8;
   if(!isNum(st.maybePct))st.maybePct=10;
   if(x&&!(x.ver>=3)){if(st.tQual==null)st.tQual=DEF.tQual;if(st.tWrong==null)st.tWrong=DEF.tWrong;}
-  st.ver=4;return st;
+  st.ver=4;return sane(st);
+}
+function cleanId(x){return String(x==null?'':x).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);}
+function numOr(x,d){return (typeof x==='number'||(typeof x==='string'&&x.trim()!==''))&&isFinite(+x)?+x:d;}
+function cleanStr(x){return String(x==null?'':x).slice(0,60);}
+function cleanRows(a,nums,ids){
+  return (Array.isArray(a)?a:[]).filter(function(o){return o&&typeof o==='object'&&!Array.isArray(o);}).map(function(o){
+    var r={};Object.keys(o).forEach(function(k){if(k!=='__proto__')r[k]=o[k];});
+    ids.forEach(function(k){if(k in r)r[k]=cleanId(r[k]);});
+    nums.forEach(function(k){if(k in r&&r[k]!=null)r[k]=numOr(r[k],0);});
+    if('z' in r)r.z=cleanStr(r.z);
+    if('md' in r)r.md=r.md==='b'?'b':'c';
+    return r;
+  });
 }
 function fromObj(o){
-  return {settings:mig(o.settings),deliveries:Array.isArray(o.deliveries)?o.deliveries:[],shifts:Array.isArray(o.shifts)?o.shifts:[],
-    events:Array.isArray(o.events)?o.events:[],zones:Array.isArray(o.zones)?o.zones:(MINE?DEFZONES.slice():[]),
-    curZone:o.curZone||'',pend:Array.isArray(o.pend)?o.pend:[],draft:o.draft||null};
+  o=o&&typeof o==='object'?o:{};
+  var d=o.draft&&typeof o.draft==='object'?{end:numOr(o.draft.end,Date.now()),ms:numOr(o.draft.ms,0),z:cleanStr(o.draft.z),md:o.draft.md==='b'?'b':'c'}:null;
+  return {settings:mig(o.settings&&typeof o.settings==='object'?o.settings:null),
+    deliveries:cleanRows(o.deliveries,['ts','pay','miles','n','hrs','m','tm'],['id']),
+    shifts:cleanRows(o.shifts,['start','end','s0','hrs','m','tm'],['id','did']),
+    events:Array.isArray(o.events)?o.events:[],
+    zones:Array.isArray(o.zones)?o.zones.filter(function(z){return typeof z==='string'&&z.trim();}).map(cleanStr):(MINE?DEFZONES.slice():[]),
+    curZone:cleanStr(o.curZone),pend:Array.isArray(o.pend)?o.pend:[],draft:d};
 }
 function blank(){return fromObj({});}
 function load(){
@@ -362,16 +383,17 @@ function renderDrive(){
   $('ladderNote').textContent=note;
   renderQuick();
 }
-var NUMW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+var MIC_NEEDS_DOLLARS=true; /* set false to let the Say it button accept bare numbers again */
+var NUMW=Object.assign(Object.create(null),{zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90});
 var FILL=['dash','and','a','an','the','for','is','its',"it's",'it','about','around','like','uh','um','hey','ok','okay','just','only','pay','paying','offer','offering','order','please','of','at','total'];
-var UNITW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9};
+var UNITW=Object.assign(Object.create(null),{one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9});
 /* ONE validation path for typed and spoken offers. Returns {ok,pay,miles} or {ok:false,reason}. Never guesses. */
-function readOffer(t){
-  var x=String(t||'').toLowerCase();
+function readOffer(t,mic){
+  var x=String(t||'').toLowerCase().replace(/[\u2018\u2019]/g,"'");
   if(/km|kilomet|metre|meter|\bfeet\b|\bfoot\b|\bft\b|\byards?\b|\byds?\b|\bminutes?\b|\bmins?\b|\bhours?\b|\bhrs?\b|\bsecs?\b|\bseconds?\b|\bcm\b|\bmm\b|\bm\b|\bmph\b|\bblocks?\b/.test(x))return {ok:false,reason:'unit'};
   x=x.replace(/\b(dollars?|bucks?)\s+and\s+(a\s+)?half\b/g,' point 5 dollars ').replace(/\s+and\s+(a\s+)?half\b/g,' point 5 ');
   if(/\b(hundred|thousand|grand|half|quarter|third|dozen|couple)\b/.test(x))return {ok:false,reason:'unsupported'};
-  x=x.replace(/\.(?!\d)/g,' ').replace(/([a-z])-([a-z])/g,'$1 $2').replace(/\$/g,' dollars ').replace(/\bpoint\b|\bdot\b/g,' . ');
+  x=x.replace(/\.(?!\d)/g,' ').replace(/([a-z])-([a-z])/g,'$1 $2').replace(/\$\s*(\d+(?:\.\d+)?(?:\s+point\s+\d+)?)/g,' $1 dollars ').replace(/\$/g,' dollars ').replace(/\bpoint\b|\bdot\b/g,' . ');
   x=x.replace(/,/g,' S ').replace(/\b(dollars?|bucks?)\b/g,' D ').replace(/\b(miles?|mi)\b/g,' M ').replace(/\bcents?\b/g,' C ');
   var toks=x.split(/\s+/).filter(Boolean),items=[],i=0;
   while(i<toks.length){
@@ -401,22 +423,31 @@ function readOffer(t){
   var N=ix.map(function(k){return items[k].v;});
   var hasD=items.some(function(it){return it.k==='D';}),hasM=items.some(function(it){return it.k==='M';}),hasC=items.some(function(it){return it.k==='C';});
   var pay,miles;
+  var kinds=items.map(function(it){return it.k;});
+  function has(k,from,to){return kinds.slice(from,to).indexOf(k)>=0;}
+  var last=ix[N.length-1];
+  /* a miles marker before the miles number, or a dollar/cents marker after it, means the order is wrong */
+  if(N.length>=2&&(has('M',0,last)||has('D',last+1)||has('C',last+1)))return {ok:false,reason:'order'};
   if(N.length===2&&!hasC){
-    var mid=items.slice(ix[0]+1,ix[1]).map(function(it){return it.k;}),bothDigits=items[ix[0]].src==='d'&&items[ix[1]].src==='d';
-    if(!(mid.indexOf('D')>=0||mid.indexOf('S')>=0||mid.indexOf('M')>=0||bothDigits))return {ok:false,reason:'unclear'};
+    var bothDigits=items[ix[0]].src==='d'&&items[ix[1]].src==='d';
+    if(!(has('D',ix[0]+1,ix[1])||has('S',ix[0]+1,ix[1])||bothDigits))return {ok:false,reason:'unclear'};
     pay=N[0];miles=N[1];
-  }else if(N.length===3&&hasC){pay=N[0]+N[1]/100;miles=N[2];}
-  else return {ok:false,reason:N.length<2?'few':'unclear'};
-  if(hasD&&hasM){var di=-1,mi=-1;items.forEach(function(it,k){if(it.k==='D'&&di<0)di=k;if(it.k==='M'&&mi<0)mi=k;});if(mi<di)return {ok:false,reason:'order'};}
+  }else if(N.length===3&&hasC){
+    var c=items[ix[1]];
+    if(!items[ix[0]].int||!c.int||c.v>99||kinds[ix[1]+1]!=='C'||kinds.filter(function(k){return k==='C';}).length!==1)return {ok:false,reason:'cents'};
+    pay=N[0]+c.v/100;miles=N[2];
+  }else return {ok:false,reason:N.length<2?'few':'unclear'};
+  /* B. mic guard: speech-to-text returns bare digits, so a spoken offer must mark the pay as dollars */
+  if(mic&&MIC_NEEDS_DOLLARS&&!has('D',ix[0]+1,last))return {ok:false,reason:'saydollars'};
   if(!(pay>=1&&pay<=99.99)||!(miles>=0.1&&miles<=40))return {ok:false,reason:'range'};
   return {ok:true,pay:Math.round(pay*100)/100,miles:miles};
 }
-function parseSpoken(t){return readOffer(t);}
+function parseSpoken(t){return readOffer(t,true);}
 function parseOffer(t){var r=readOffer(t);return r.ok?{pay:r.pay,miles:r.miles}:null;}
 /* one verdict object feeds BOTH the screen and the voice */
-function verdictFor(t){
-  var r=readOffer(t);
-  if(!r.ok)return {ok:false,reason:r.reason,speech:r.reason==='unit'?'That is not in miles. Say the distance in miles.':'Did not catch that. Say the pay, then the miles.'};
+function verdictFor(t,mic){
+  var r=readOffer(t,mic);
+  if(!r.ok)return {ok:false,reason:r.reason,speech:r.reason==='unit'?'That is not in miles. Say the distance in miles.':(r.reason==='saydollars'?'Say the pay in dollars, then the miles. For example, eight dollars, three miles.':'Did not catch that. Say the pay, then the miles.')};
   var e=evaluate(r.pay,r.miles,shopMode),prot=!!S.settings.protect;
   var wd=Math.floor(r.pay+1e-9),ct=Math.round((r.pay-wd)*100),heard=wd+' dollar'+(wd===1?'':'s')+(ct?' and '+ct+' cents':'')+', '+r.miles+' mile'+(r.miles===1?'':'s')+'. ';
   var w=e.v==='accept'?'Accept.':(e.v==='maybe'?'Maybe.':'Decline.');
@@ -424,10 +455,11 @@ function verdictFor(t){
   return {ok:true,pay:r.pay,miles:r.miles,e:e,v:e.v,speech:heard+w+extra};
 }
 function say(txt){try{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(txt);u.rate=1.0;speechSynthesis.speak(u);}catch(e){}}
-function spokenFor(t){var v=verdictFor(t);return {text:v.speech,verdict:v.ok?v.v:null};}
+function spokenFor(t,mic){var v=verdictFor(t,mic);return {text:v.speech,verdict:v.ok?v.v:null};}
+var micFill=false; /* true only while the box holds text the Say it button put there */
 function renderQuick(){
-  var raw=$('qOffer').value,out=$('qResult'),v=verdictFor(raw);
-  if(!v.ok){out.innerHTML=raw.trim()?'<p class="hint">'+(v.reason==='unit'?'Enter the distance in miles.':'Not clear. Say or type the pay, then the miles.')+'</p>':'';return;}
+  var raw=$('qOffer').value,out=$('qResult'),v=verdictFor(raw,micFill);
+  if(!v.ok){out.innerHTML=raw.trim()?'<p class="hint">'+(v.reason==='unit'?'Enter the distance in miles.':(v.reason==='saydollars'?'Say the pay with the word dollars, then the miles. Example: eight dollars, three miles.':'Not clear. Say or type the pay, then the miles.'))+'</p>':'';return;}
   var r=v.e,p=params(),q={pay:v.pay,miles:v.miles};
   var word=r.v==='accept'?'ACCEPT':(r.v==='maybe'?'MAYBE':'DECLINE');
   var lines=money(r.perMile)+' per mile, '+money(r.perHour)+' per hour (about '+Math.round(minsFor(q.miles,shopMode))+' min).';
@@ -435,12 +467,12 @@ function renderQuick(){
   if(r.tierTake)lines+=' Taken because Protect tier is on.';
   out.innerHTML='<div class="verdict v-'+r.v+'"><div class="vw">'+word+'</div><div class="hint" style="margin-top:2px">'+lines+'</div></div>';
 }
-$('qOffer').addEventListener('input',renderQuick);
-$('qHear').addEventListener('click',function(){renderQuick();say(spokenFor($('qOffer').value).text);});
-$('qOffer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();say(spokenFor($('qOffer').value).text);}});
+$('qOffer').addEventListener('input',function(){micFill=false;renderQuick();});
+$('qHear').addEventListener('click',function(){renderQuick();say(spokenFor($('qOffer').value,micFill).text);});
+$('qOffer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();say(spokenFor($('qOffer').value,micFill).text);}});
 (function(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;var b=$('qMic');b.style.display='';
   b.addEventListener('click',function(){try{var r=new SR();r.lang='en-US';r.interimResults=false;r.maxAlternatives=1;
-    r.onresult=function(ev){var tx=ev.results[0][0].transcript;$('qOffer').value=tx;renderQuick();var o=spokenFor(tx);say(o.text);};
+    r.onresult=function(ev){var tx=ev.results[0][0].transcript;micFill=true;$('qOffer').value=tx;renderQuick();var o=spokenFor(tx,true);say(o.text);};
     r.onerror=function(){say('Did not catch that.');};r.start();}catch(e){say('Mic is not available here.');}});})();
 
 $('segMode').addEventListener('click',function(e){var b=e.target.closest('[data-mode]');if(!b)return;S.settings.mode=b.dataset.mode;save();renderDrive();});
@@ -583,8 +615,8 @@ function renderLog(){
       list.map(function(r){
         var ph=r.hrs>0?r.d.pay/r.hrs:0;
         return '<div class="ent"><div class="top"><span>'+money(r.d.pay)+'</span><span>'+money(ph)+'/hr</span></div>'+
-          '<div class="meta">Shift ended '+t12(r.s.end)+(r.d.z?' &middot; '+esc(r.d.z):'')+' &middot; '+fmtHrs(r.hrs)+' &middot; '+r.d.miles+' mi'+(r.d.n?' &middot; '+r.d.n+' orders':'')+(r.s.md==='b'?' &middot; bike':'')+'</div>'+
-          '<button class="btn alt sm" data-del="'+r.d.id+'">Delete</button></div>';
+          '<div class="meta">Shift ended '+t12(r.s.end)+(r.d.z?' &middot; '+esc(r.d.z):'')+' &middot; '+fmtHrs(r.hrs)+' &middot; '+esc(r.d.miles)+' mi'+(r.d.n?' &middot; '+esc(r.d.n)+' orders':'')+(r.s.md==='b'?' &middot; bike':'')+'</div>'+
+          '<button class="btn alt sm" data-del="'+esc(r.d.id)+'">Delete</button></div>';
       }).join('');
   }).join('');
 }
@@ -670,7 +702,7 @@ document.querySelectorAll('[data-s]').forEach(function(el){
     var k=el.dataset.s,v=parseFloat(el.value);
     if(isFinite(v))S.settings[k]=v;
     else S.settings[k]=NULLABLE.test(k)?null:DEF[k];
-    if(k==='maybePct'&&!(S.settings.maybePct>=0&&S.settings.maybePct<=50))S.settings.maybePct=10;
+    sane(S.settings);
     save();renderDrive();renderFactorOut();renderShop();
   });
 });
