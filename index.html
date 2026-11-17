@@ -99,7 +99,8 @@ details summary{min-height:44px;display:flex;align-items:center;color:var(--gold
   <p class="hint" id="ladderNote"></p>
   <div class="card">
     <h3>Check one offer</h3>
-    <label for="qOffer">Pay, then miles. Type it or use the keyboard mic. Example: 8.50 3.2</label>
+    <div class="g2"><div><label for="qPay">Pay ($)</label><input id="qPay" type="text" inputmode="decimal" autocomplete="off" placeholder="8.50"></div><div><label for="qMi">Miles</label><input id="qMi" type="text" inputmode="decimal" autocomplete="off" placeholder="3.2"></div></div>
+    <label for="qOffer">Or type or say both, pay then miles. Example: 8.50 3.2</label>
     <input id="qOffer" type="text" inputmode="text" autocomplete="off" autocapitalize="off" placeholder="8.50 3.2">
     <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" id="qHear" type="button">Hear it</button><button class="btn sm alt" id="qMic" type="button" style="display:none">Say it</button></div>
     <div id="qResult"></div>
@@ -409,6 +410,7 @@ function readOffer(t,mic){
   var x=String(t||'').toLowerCase().replace(/[\u2018\u2019]/g,"'");
   if(/km|kilomet|metre|meter|\bfeet\b|\bfoot\b|\bft\b|\byards?\b|\byds?\b|\bminutes?\b|\bmins?\b|\bhours?\b|\bhrs?\b|\bsecs?\b|\bseconds?\b|\bcm\b|\bmm\b|\bm\b|\bmph\b|\bblocks?\b/.test(x))return {ok:false,reason:'unit'};
   x=x.replace(/\b(dollars?|bucks?)\s+and\s+(a\s+)?half\b/g,' point 5 dollars ').replace(/\s+and\s+(a\s+)?half\b/g,' point 5 ');
+  if(/(\d\s*\.|\b(?:point|dot))\s*\$/.test(x))return {ok:false,reason:'decimal'};
   if(/\b(hundred|thousand|grand|half|quarter|third|dozen|couple)\b/.test(x))return {ok:false,reason:'unsupported'};
   x=x.replace(/\.(?!\d)/g,' ').replace(/([a-z])-([a-z])/g,'$1 $2').replace(/\$\s*(\d+(?:\.\d+)?(?:\s+point\s+\d+)?)/g,' $1 dollars ').replace(/\$/g,' dollars ').replace(/\bpoint\b|\bdot\b/g,' . ');
   x=x.replace(/,/g,' S ').replace(/\b(dollars?|bucks?)\b/g,' D ').replace(/\b(miles?|mi)\b/g,' M ').replace(/\bcents?\b/g,' C ');
@@ -465,32 +467,55 @@ function parseOffer(t){var r=readOffer(t);return r.ok?{pay:r.pay,miles:r.miles}:
 function verdictFor(t,mic){
   var r=readOffer(t,mic);
   if(!r.ok)return {ok:false,reason:r.reason,speech:r.reason==='unit'?'That is not in miles. Say the distance in miles.':(r.reason==='saydollars'?'Say the pay in dollars, then the miles. For example, eight dollars, three miles.':'Did not catch that. Say the pay, then the miles.')};
-  var e=evaluate(r.pay,r.miles,shopMode),prot=!!S.settings.protect;
-  var wd=Math.floor(r.pay+1e-9),ct=Math.round((r.pay-wd)*100),heard=wd+' dollar'+(wd===1?'':'s')+(ct?' and '+ct+' cents':'')+', '+r.miles+' mile'+(r.miles===1?'':'s')+'. ';
+  return verdictNums(r.pay,r.miles);
+}
+function verdictNums(pay,miles){
+  var e=evaluate(pay,miles,shopMode),prot=!!S.settings.protect;
+  var wd=Math.floor(pay+1e-9),ct=Math.round((pay-wd)*100),heard=wd+' dollar'+(wd===1?'':'s')+(ct?' and '+ct+' cents':'')+', '+miles+' mile'+(miles===1?'':'s')+'. ';
   var w=e.v==='accept'?'Accept.':(e.v==='maybe'?'Maybe.':'Decline.');
   var extra=e.v==='decline'?(prot?' Accept starts at '+money(up5(e.th.acc))+'.':' Maybe starts at '+money(up5(e.th.maybe))+'.'):(e.v==='maybe'?' Accept starts at '+money(up5(e.th.acc))+'.':'');
-  return {ok:true,pay:r.pay,miles:r.miles,e:e,v:e.v,speech:heard+w+extra};
+  return {ok:true,pay:pay,miles:miles,e:e,v:e.v,speech:heard+w+extra};
+}
+var padMode=false,padShown=false,inGen=0; /* inGen bumps on any typing or new mic start, so a late mic result is dropped */ /* true while the Pay and Miles boxes are the source */
+function padVerdict(){
+  var ps=$('qPay').value.trim().replace(/^\$\s*/,''),ms=$('qMi').value.trim();
+  function fx(v){return v.trim().replace(/^(\d*),(\d*)$/,'$1.$2').replace(/^(\d+)\.$/,'$1').replace(/^\.(?=\d)/,'0.');}ps=fx(ps);ms=fx(ms);
+  function bad(m){return {ok:false,msg:m,speech:m};}
+  if(!ps&&!ms)return {ok:false,msg:'',speech:'Enter the pay and the miles.'};
+  if(!ps||!ms)return bad('Enter both the pay and the miles.');
+  if(!/^\d{1,3}(\.\d{1,2})?$/.test(ps))return bad('Pay must be a number like 8.50, up to two decimals.');
+  if(!/^\d{1,3}(\.\d)?$/.test(ms))return bad('Miles must be a number like 3.2, one decimal at most.');
+  var pay=Math.round(+ps*100)/100,miles=Math.round(+ms*10)/10;
+  if(!(pay>=1&&pay<=99.99)||!(miles>=0.1&&miles<=40))return bad('Pay is 1 to 99.99 dollars. Miles are 0.1 to 40.');
+  return verdictNums(pay,miles);
 }
 function say(txt){try{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(txt);u.rate=1.0;speechSynthesis.speak(u);}catch(e){}}
 function spokenFor(t,mic){var v=verdictFor(t,mic);return {text:v.speech,verdict:v.ok?v.v:null};}
 var micFill=false; /* true only while the box holds text the Say it button put there */
 function renderQuick(){
-  var raw=$('qOffer').value,out=$('qResult'),v=verdictFor(raw,micFill);
-  if(!v.ok){out.innerHTML=raw.trim()?'<p class="hint">'+(v.reason==='unit'?'Enter the distance in miles.':(v.reason==='saydollars'?'Say the pay with the word dollars, then the miles. Example: eight dollars, three miles.':'Not clear. Say or type the pay, then the miles.'))+'</p>':'';return;}
+  var raw=padMode?($('qPay').value+$('qMi').value):$('qOffer').value,out=$('qResult'),v=padMode?padVerdict():verdictFor(raw,micFill);
+  if(!v.ok){out.innerHTML=raw.trim()?'<p class="hint">'+(v.msg?v.msg:v.reason==='unit'?'Enter the distance in miles.':(v.reason==='saydollars'?'Say the pay with the word dollars, then the miles. Example: eight dollars, three miles.':'Not clear. Say or type the pay, then the miles.'))+'</p>':'';return;}
+  padShown=padMode&&v.ok;
   var r=v.e,p=params(),q={pay:v.pay,miles:v.miles};
   var word=r.v==='accept'?'ACCEPT':(r.v==='maybe'?'MAYBE':'DECLINE');
-  var lines=money(r.perMile)+' per mile, '+money(r.perHour)+' per hour (about '+Math.round(minsFor(q.miles,shopMode))+' min).';
+  var lines=(padMode?'<b>'+money(q.pay)+' for '+q.miles+' mi.</b> ':'')+money(r.perMile)+' per mile, '+money(r.perHour)+' per hour (about '+Math.round(minsFor(q.miles,shopMode))+' min).';
   if(p.cost>0)lines+=' After fuel + upkeep: '+money(r.net)+', '+money(r.netHr)+' per hour.';
   if(r.tierTake)lines+=' Taken because Protect tier is on.';
   out.innerHTML='<div class="verdict v-'+r.v+'"><div class="vw">'+word+'</div><div class="hint" style="margin-top:2px">'+lines+'</div></div>';
 }
-$('qOffer').addEventListener('input',function(){micFill=false;renderQuick();});
-$('qHear').addEventListener('click',function(){renderQuick();say(spokenFor($('qOffer').value,micFill).text);});
-$('qOffer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();say(spokenFor($('qOffer').value,micFill).text);}});
+function speakNow(){say((padMode?padVerdict():verdictFor($('qOffer').value,micFill)).speech);}
+$('qOffer').addEventListener('input',function(){inGen++;padMode=false;micFill=false;$('qPay').value='';$('qMi').value='';renderQuick();});
+['qPay','qMi'].forEach(function(id){
+  $(id).addEventListener('focus',function(){if(padShown){$('qPay').value='';$('qMi').value='';padShown=false;renderQuick();}});
+  $(id).addEventListener('input',function(){inGen++;padMode=true;micFill=false;$('qOffer').value='';renderQuick();});
+  $(id).addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();speakNow();}});
+});
+$('qHear').addEventListener('click',function(){renderQuick();speakNow();});
+$('qOffer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderQuick();speakNow();}});
 (function(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;var b=$('qMic');b.style.display='';
-  b.addEventListener('click',function(){try{var r=new SR();r.lang='en-US';r.interimResults=false;r.maxAlternatives=1;
-    r.onresult=function(ev){var tx=ev.results[0][0].transcript;micFill=true;$('qOffer').value=tx;renderQuick();var o=spokenFor(tx,true);say(o.text);};
-    r.onerror=function(){say('Did not catch that.');};r.start();}catch(e){say('Mic is not available here.');}});})();
+  b.addEventListener('click',function(){try{var g=++inGen,r=new SR();r.lang='en-US';r.interimResults=false;r.maxAlternatives=1;
+    r.onresult=function(ev){if(g!==inGen)return;var tx=ev.results[0][0].transcript;padMode=false;$('qPay').value='';$('qMi').value='';micFill=true;$('qOffer').value=tx;renderQuick();var o=spokenFor(tx,true);say(o.text);};
+    r.onerror=function(){if(g!==inGen)return;say('Did not catch that.');};r.start();}catch(e){say('Mic is not available here.');}});})();
 
 $('segMode').addEventListener('click',function(e){var b=e.target.closest('[data-mode]');if(!b)return;S.settings.mode=b.dataset.mode;save();renderDrive();});
 $('segType').addEventListener('click',function(e){var b=e.target.closest('[data-shop]');if(!b)return;shopMode=b.dataset.shop==='1';renderDrive();});
@@ -766,12 +791,12 @@ function showTab(n){
 }
 $('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab);});
 
-function renderAll(){renderBk();renderDrive();renderZoneSelects();renderZoneList();renderShift();prefillEnd(true);renderSetupFields();renderLog();renderStats();}
+function renderAll(){try{renderBk();}catch(e){}renderDrive();renderZoneSelects();renderZoneList();renderShift();prefillEnd(true);renderSetupFields();renderLog();renderStats();}
 buildShopFields();
 if(MINE)$('presetLine').textContent='Your copy. Zones and tier marks are preloaded. Your data stays on this phone.';
 renderAll();
 try{if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('/sw.js');}catch(e){}
-window.__dash={thresholds:thresholds,evaluate:evaluate,parseOffer:parseOffer,parseSpoken:parseSpoken,spokenFor:spokenFor,getS:function(){return S;},KEY:KEY};
+window.__dash={thresholds:thresholds,evaluate:evaluate,parseOffer:parseOffer,parseSpoken:parseSpoken,padVerdict:padVerdict,spokenFor:spokenFor,getS:function(){return S;},KEY:KEY};
 })();
 </script>
 </body>
