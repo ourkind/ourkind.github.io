@@ -1,0 +1,37 @@
+name: Decode app binary assets
+on:
+  push:
+    branches: [main]
+    paths:
+      - "business-bundle/*.b64"
+      - "client-tracker/*.b64"
+      - "outreach-engine/*.b64"
+      - ".github/workflows/decode-app-assets.yml"
+concurrency:
+  group: decode-app-assets
+  cancel-in-progress: false
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode app binary assets
+        run: |
+          shopt -s nullglob
+          for f in business-bundle/*.b64 client-tracker/*.b64 outreach-engine/*.b64; do
+            base64 -d "$f" > "${f%.b64}"
+            git add "${f%.b64}"
+          done
+      - name: Commit decoded files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --cached --quiet; then
+            echo "No binary changes"
+          else
+            git commit -m "Add decoded app icons and manuals"
+            git pull --rebase origin main
+            git push
+          fi
