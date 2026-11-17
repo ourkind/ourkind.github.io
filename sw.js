@@ -1,6 +1,6 @@
-const CACHE='dash-v2-4';
+const CACHE='dash-v2-5';
 const NET_TIMEOUT=3000; /* ms to wait for the network before using the saved copy */
-const ASSETS=['/','/mine/','/manifest.webmanifest','/mine/manifest.webmanifest','/icon-180.png','/icon-512.png'];
+const ASSETS=['/','/mine/','/mine/tutor.js','/manifest.webmanifest','/mine/manifest.webmanifest','/icon-180.png','/icon-512.png'];
 const OFFLINE='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><body style="background:#0A0A0A;color:#fff;font:18px -apple-system,system-ui,sans-serif;padding:32px"><h2>Offline</h2><p>Your personalized Dash page is not saved on this phone yet.</p><p>Connect once and open it again. It will then work without a signal.</p>';
 const offlinePage=()=>new Response(OFFLINE,{status:503,headers:{'Content-Type':'text/html; charset=utf-8'}});
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));});
