@@ -1,4 +1,4 @@
-const CACHE = "raeford-outreach-v2-7";
+const CACHE = "raeford-outreach-v2-8";
 const ASSETS = [
   "./",
   "./index.html",

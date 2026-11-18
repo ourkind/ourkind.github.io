@@ -704,7 +704,7 @@ function showTour() {
 }
 function learn() {
   return (
-    '<h2>Learn Outreach Engine</h2><div class="actions"><button class="primary" data-action="tour">Start guided tour</button><a class="button" href="manual.pdf" target="_blank" rel="noopener">Open how-to manual</a></div><div class="row">' +
+    '<h2>Learn Business Bundle</h2><div class="actions"><button class="primary" data-action="tour">Start guided tour</button><a class="button" href="manual.pdf" target="_blank" rel="noopener">Open how-to manual</a></div><div class="row">' +
     lessons
       .map(
         (l) =>
@@ -801,7 +801,7 @@ function validateImport(text) {
     JSON.stringify(["format", "collection", "id", "record_json"])
   )
     throw Error(
-      "Use a CSV exported by Outreach Engine v2. Expected format, collection, id and record_json columns.",
+      "Use a CSV exported by Business Bundle. Expected format, collection, id and record_json columns.",
     );
   const incoming = fresh(),
     ids = new Set();
